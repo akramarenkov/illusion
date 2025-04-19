@@ -42,16 +42,16 @@ type node struct {
 	req       testcontainers.GenericContainerRequest
 }
 
-func (nd *node) Get() testcontainers.Container {
-	return nd.container
+func (n *node) Get() testcontainers.Container {
+	return n.container
 }
 
-func (nd *node) Set(created testcontainers.Container) {
-	nd.container = created
+func (n *node) Set(created testcontainers.Container) {
+	n.container = created
 }
 
-func (nd *node) Request() testcontainers.GenericContainerRequest {
-	return nd.req
+func (n *node) Request() testcontainers.GenericContainerRequest {
+	return n.req
 }
 
 type cluster struct {
@@ -221,11 +221,11 @@ func (clt *cluster) prepareNodeRequests() error {
 			Started: true,
 		}
 
-		nd := &node{
+		prepared := &node{
 			req: request,
 		}
 
-		clt.nodes[id] = nd
+		clt.nodes[id] = prepared
 	}
 
 	return nil

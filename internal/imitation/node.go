@@ -18,28 +18,28 @@ type Node struct {
 	testcontainers.Container
 }
 
-func (nd *Node) Get() testcontainers.Container {
-	return nd
+func (node *Node) Get() testcontainers.Container {
+	return node
 }
 
-func (nd *Node) Set(container testcontainers.Container) {
-	nd.Container = container
+func (node *Node) Set(container testcontainers.Container) {
+	node.Container = container
 }
 
-func (nd *Node) Request() testcontainers.GenericContainerRequest {
-	return nd.Req
+func (node *Node) Request() testcontainers.GenericContainerRequest {
+	return node.Req
 }
 
-func (nd *Node) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
-	if nd.IsTerminationFailed {
+func (node *Node) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
+	if node.IsTerminationFailed {
 		return ErrTerminationFailed
 	}
 
-	if nd.Container == nil {
+	if node.Container == nil {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(nd.TerminationDuration):
+		case <-time.After(node.TerminationDuration):
 		}
 
 		return nil
@@ -47,11 +47,11 @@ func (nd *Node) Terminate(ctx context.Context, opts ...testcontainers.TerminateO
 
 	start := time.Now()
 
-	if err := nd.Container.Terminate(ctx, opts...); err != nil {
+	if err := node.Container.Terminate(ctx, opts...); err != nil {
 		return err
 	}
 
-	time.Sleep(nd.TerminationDuration - time.Since(start))
+	time.Sleep(node.TerminationDuration - time.Since(start))
 
 	return nil
 }
