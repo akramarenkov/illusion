@@ -39,6 +39,15 @@ func TestNode(t *testing.T) {
 }
 
 func TestNodePseudoTerminate(t *testing.T) {
+	var node Node
+
+	start := time.Now()
+
+	require.NoError(t, node.Terminate(t.Context()))
+	require.Less(t, time.Since(start), 50*time.Millisecond)
+}
+
+func TestNodePseudoTerminateDuration(t *testing.T) {
 	const expectedDuration = time.Second
 
 	node := Node{

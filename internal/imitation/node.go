@@ -36,6 +36,10 @@ func (node *Node) Terminate(ctx context.Context, opts ...testcontainers.Terminat
 	}
 
 	if node.Container == nil {
+		if node.TerminationDuration <= 0 {
+			return nil
+		}
+
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
