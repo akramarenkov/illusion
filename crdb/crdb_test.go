@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRunCluster(t *testing.T) {
-	cln, err := interceptor.Run(t.Context(), nil)
+	cln, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
@@ -56,7 +56,7 @@ func TestRunCluster(t *testing.T) {
 }
 
 func TestRunClusterWrongNodesQuantity(t *testing.T) {
-	cln, err := interceptor.Run(t.Context(), nil)
+	cln, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
@@ -81,7 +81,7 @@ func TestRunClusterWrongNodesQuantity(t *testing.T) {
 }
 
 func TestRunClusterWrongTag(t *testing.T) {
-	cln, err := interceptor.Run(t.Context(), nil)
+	cln, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
@@ -102,7 +102,7 @@ func TestRunClusterWrongTag(t *testing.T) {
 }
 
 func TestRunClusterContextCancel(t *testing.T) {
-	cln, err := interceptor.Run(t.Context(), nil)
+	cln, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {

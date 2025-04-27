@@ -42,7 +42,7 @@ func Setup() (func() error, error) {
 	return cleanup, nil
 }
 
-func Run(ctx context.Context, deciders []httpw.Decider) (Cleanup, error) {
+func Run(deciders ...httpw.Decider) (Cleanup, error) {
 	listen, err := url.Parse(os.Getenv("DOCKER_HOST"))
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func Run(ctx context.Context, deciders []httpw.Decider) (Cleanup, error) {
 			return err
 		}
 
-		if err != http.ErrServerClosed {
+		if !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
 

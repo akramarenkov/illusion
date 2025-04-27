@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRun(t *testing.T) {
-	cleanup, err := Run(t.Context(), nil)
+	cleanup, err := Run()
 	require.NoError(t, err)
 	require.NoError(t, cleanup(t.Context()))
 }
