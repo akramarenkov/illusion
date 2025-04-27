@@ -5,13 +5,37 @@ import (
 	"testing"
 	"time"
 
+	"github.com/akramarenkov/illusion/internal/interceptor"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/cockroachdb"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/require"
 )
 
+func TestMain(m *testing.M) {
+	cleanup, err := interceptor.Setup()
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := cleanup(); err != nil {
+			panic(err)
+		}
+	}()
+
+	m.Run()
+}
+
 func TestRunCluster(t *testing.T) {
+	cln, err := interceptor.Run(t.Context(), nil)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cln(t.Context()))
+	}()
+
 	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
 	defer func() {
 		require.NoError(t, cleanup(t.Context()))
@@ -32,6 +56,13 @@ func TestRunCluster(t *testing.T) {
 }
 
 func TestRunClusterWrongNodesQuantity(t *testing.T) {
+	cln, err := interceptor.Run(t.Context(), nil)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cln(t.Context()))
+	}()
+
 	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", -1)
 	defer func() {
 		require.NoError(t, cleanup(t.Context()))
@@ -50,6 +81,13 @@ func TestRunClusterWrongNodesQuantity(t *testing.T) {
 }
 
 func TestRunClusterWrongTag(t *testing.T) {
+	cln, err := interceptor.Run(t.Context(), nil)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cln(t.Context()))
+	}()
+
 	dsns, cleanup, err := RunCluster(t.Context(), "63bc8ecd", 3)
 	defer func() {
 		require.NoError(t, cleanup(t.Context()))
@@ -64,6 +102,13 @@ func TestRunClusterWrongTag(t *testing.T) {
 }
 
 func TestRunClusterContextCancel(t *testing.T) {
+	cln, err := interceptor.Run(t.Context(), nil)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cln(t.Context()))
+	}()
+
 	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)
 	defer cancel()
 
