@@ -16,6 +16,8 @@ import (
 	"github.com/akramarenkov/wrecker/httpw"
 )
 
+const defaultDockerHost = "unix:///var/run/docker.sock"
+
 // Cleans up interceptor environment.
 type Cleanup func()
 
@@ -27,20 +29,17 @@ type Shutdown func(ctx context.Context) error
 //
 // [Cleanup] function must be called when the [TestMain] function completes.
 func Prepare() Cleanup {
+	upstream := os.Getenv("DOCKER_HOST")
+
+	if upstream == "" {
+		upstream = defaultDockerHost
+	}
+
 	// Using environment variables makes it easy to setup the interceptor for each
 	// package individually. It is more difficult to achieve the same behavior when
 	// using a global variables
-	if err := os.Setenv(env.InterceptorUpstream, os.Getenv("DOCKER_HOST")); err != nil {
+	if err := os.Setenv(env.InterceptorUpstream, upstream); err != nil {
 		panic(err)
-	}
-
-	revert := func() error {
-		err := errors.Join(
-			os.Setenv("DOCKER_HOST", os.Getenv(env.InterceptorUpstream)),
-			os.Unsetenv(env.InterceptorUpstream),
-		)
-
-		return err
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "")
@@ -49,12 +48,7 @@ func Prepare() Cleanup {
 	}
 
 	purge := func() error {
-		err := errors.Join(
-			os.RemoveAll(tempDir),
-			revert(),
-		)
-
-		return err
+		return os.RemoveAll(tempDir)
 	}
 
 	socket := url.URL{
