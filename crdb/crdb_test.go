@@ -14,26 +14,18 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cleanup, err := interceptor.Setup()
-	if err != nil {
-		panic(err)
-	}
-
-	defer func() {
-		if err := cleanup(); err != nil {
-			panic(err)
-		}
-	}()
+	cleanup := interceptor.Prepare()
+	defer cleanup()
 
 	m.Run()
 }
 
 func TestRunCluster(t *testing.T) {
-	cln, err := interceptor.Run()
+	shutdown, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
-		require.NoError(t, cln(t.Context()))
+		require.NoError(t, shutdown(t.Context()))
 	}()
 
 	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
@@ -56,11 +48,11 @@ func TestRunCluster(t *testing.T) {
 }
 
 func TestRunClusterWrongNodesQuantity(t *testing.T) {
-	cln, err := interceptor.Run()
+	shutdown, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
-		require.NoError(t, cln(t.Context()))
+		require.NoError(t, shutdown(t.Context()))
 	}()
 
 	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", -1)
@@ -81,11 +73,11 @@ func TestRunClusterWrongNodesQuantity(t *testing.T) {
 }
 
 func TestRunClusterWrongTag(t *testing.T) {
-	cln, err := interceptor.Run()
+	shutdown, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
-		require.NoError(t, cln(t.Context()))
+		require.NoError(t, shutdown(t.Context()))
 	}()
 
 	dsns, cleanup, err := RunCluster(t.Context(), "63bc8ecd", 3)
@@ -102,11 +94,11 @@ func TestRunClusterWrongTag(t *testing.T) {
 }
 
 func TestRunClusterContextCancel(t *testing.T) {
-	cln, err := interceptor.Run()
+	shutdown, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
-		require.NoError(t, cln(t.Context()))
+		require.NoError(t, shutdown(t.Context()))
 	}()
 
 	ctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)

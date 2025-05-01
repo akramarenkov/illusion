@@ -1,3 +1,5 @@
+// Intercepts requests to the container manager and provide to decide which ones
+// to skip. Can only be used in tests.
 package interceptor
 
 import (
@@ -14,22 +16,30 @@ import (
 	"github.com/akramarenkov/wrecker/httpw"
 )
 
-type Cleanup func(ctx context.Context) error
+// Cleans up interceptor environment.
+type Cleanup func()
 
-func Setup() (func() error, error) {
+// Shuts down interceptor.
+type Shutdown func(ctx context.Context) error
+
+// Prepares environment for interceptor. Must be called in [TestMain] function. Panics
+// when something goes wrong.
+//
+// [Cleanup] function must be called when the [TestMain] function completes.
+func Prepare() Cleanup {
 	// Using environment variables makes it easy to setup the interceptor for each
 	// package individually. It is more difficult to achieve the same behavior when
-	// using a global variable
+	// using a global variables
 	if err := os.Setenv(env.InterceptorUpstream, os.Getenv("DOCKER_HOST")); err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	cleanup := func() error {
+	purge := func() error {
 		return os.RemoveAll(tempDir)
 	}
 
@@ -39,13 +49,22 @@ func Setup() (func() error, error) {
 	}
 
 	if err := os.Setenv("DOCKER_HOST", socket.String()); err != nil {
-		return nil, errors.Join(err, cleanup())
+		panic(errors.Join(err, purge()))
 	}
 
-	return cleanup, nil
+	cleanup := func() {
+		if err := purge(); err != nil {
+			panic(err)
+		}
+	}
+
+	return cleanup
 }
 
-func Run(deciders ...httpw.Decider) (Cleanup, error) {
+// Runs interceptor. Requests can be interrupted using deciders.
+//
+// [Shutdown] function must be called when the test function completes.
+func Run(deciders ...httpw.Decider) (Shutdown, error) {
 	listen, err := url.Parse(os.Getenv("DOCKER_HOST"))
 	if err != nil {
 		return nil, err
@@ -76,17 +95,17 @@ func Run(deciders ...httpw.Decider) (Cleanup, error) {
 		return nil, err
 	}
 
-	cleanup := func(ctx context.Context) error {
+	shutdown := func(ctx context.Context) error {
 		if err := wrecker.Shutdown(ctx); err != nil {
 			return err
 		}
 
-		if !errors.Is(<-wrecker.Err(), http.ErrServerClosed) {
+		if err := <-wrecker.Err(); !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
 
 		return nil
 	}
 
-	return cleanup, nil
+	return shutdown, nil
 }

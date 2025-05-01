@@ -13,26 +13,18 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cleanup, err := interceptor.Setup()
-	if err != nil {
-		panic(err)
-	}
-
-	defer func() {
-		if err := cleanup(); err != nil {
-			panic(err)
-		}
-	}()
+	cleanup := interceptor.Prepare()
+	defer cleanup()
 
 	m.Run()
 }
 
 func TestRun(t *testing.T) {
-	cln, err := interceptor.Run()
+	shutdown, err := interceptor.Run()
 	require.NoError(t, err)
 
 	defer func() {
-		require.NoError(t, cln(t.Context()))
+		require.NoError(t, shutdown(t.Context()))
 	}()
 
 	dsns, cleanup, err := Run(t.Context(), "17", "postgres", "pgx5")
