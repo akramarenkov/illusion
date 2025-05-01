@@ -78,7 +78,7 @@ func Run(deciders ...httpw.Decider) (Cleanup, error) {
 			return err
 		}
 
-		if !errors.Is(err, http.ErrServerClosed) {
+		if !errors.Is(<-wrecker.Err(), http.ErrServerClosed) {
 			return err
 		}
 
