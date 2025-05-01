@@ -3,6 +3,8 @@ package psql
 import (
 	"testing"
 
+	"github.com/akramarenkov/illusion/internal/interceptor"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -10,7 +12,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMain(m *testing.M) {
+	cleanup, err := interceptor.Setup()
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err := cleanup(); err != nil {
+			panic(err)
+		}
+	}()
+
+	m.Run()
+}
+
 func TestRun(t *testing.T) {
+	cln, err := interceptor.Run()
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cln(t.Context()))
+	}()
+
 	dsns, cleanup, err := Run(t.Context(), "17", "postgres", "pgx5")
 	defer func() {
 		require.NoError(t, cleanup(t.Context()))

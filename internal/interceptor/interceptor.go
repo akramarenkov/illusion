@@ -17,22 +17,25 @@ import (
 type Cleanup func(ctx context.Context) error
 
 func Setup() (func() error, error) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "")
+	// Using environment variables makes it easy to setup the interceptor for each
+	// package individually. It is more difficult to achieve the same behavior when
+	// using a global variable
+	if err := os.Setenv(env.InterceptorUpstream, os.Getenv("DOCKER_HOST")); err != nil {
+		return nil, err
+	}
+
+	tempDir, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
 		return nil, err
 	}
 
 	cleanup := func() error {
-		return os.RemoveAll(tmpDir)
-	}
-
-	if err := os.Setenv(env.InterceptorUpstream, os.Getenv("DOCKER_HOST")); err != nil {
-		return nil, errors.Join(err, cleanup())
+		return os.RemoveAll(tempDir)
 	}
 
 	socket := url.URL{
 		Scheme: "unix",
-		Path:   filepath.Join(tmpDir, "interceptor.sock"),
+		Path:   filepath.Join(tempDir, "interceptor.sock"),
 	}
 
 	if err := os.Setenv("DOCKER_HOST", socket.String()); err != nil {
