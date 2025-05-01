@@ -34,6 +34,15 @@ func Prepare() Cleanup {
 		panic(err)
 	}
 
+	revert := func() error {
+		err := errors.Join(
+			os.Setenv("DOCKER_HOST", os.Getenv(env.InterceptorUpstream)),
+			os.Unsetenv(env.InterceptorUpstream),
+		)
+
+		return err
+	}
+
 	tempDir, err := os.MkdirTemp(os.TempDir(), "")
 	if err != nil {
 		panic(err)
@@ -42,8 +51,7 @@ func Prepare() Cleanup {
 	purge := func() error {
 		err := errors.Join(
 			os.RemoveAll(tempDir),
-			os.Setenv("DOCKER_HOST", os.Getenv(env.InterceptorUpstream)),
-			os.Unsetenv(env.InterceptorUpstream),
+			revert(),
 		)
 
 		return err
@@ -69,7 +77,8 @@ func Prepare() Cleanup {
 
 // Runs interceptor. Requests can be interrupted using deciders.
 //
-// [Shutdown] function must be called when the test function completes.
+// [Shutdown] function must be called when the test function completes if
+// [Run] did not return an error.
 func Run(deciders ...httpw.Decider) (Shutdown, error) {
 	listen, err := url.Parse(os.Getenv("DOCKER_HOST"))
 	if err != nil {
