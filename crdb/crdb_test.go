@@ -29,15 +29,15 @@ func TestRunCluster(t *testing.T) {
 	}()
 
 	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
 	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cleanup(t.Context()))
+	}()
+
+	defer func() {
+		require.NoError(t, cleanup(t.Context()))
+	}()
 
 	for _, dsn := range dsns {
 		migrations, err := migrate.New("file://testdata/migrations", dsn.String())
@@ -56,19 +56,13 @@ func TestRunClusterWrongNodesQuantity(t *testing.T) {
 	}()
 
 	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", -1)
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
 	require.Error(t, err)
+	require.Nil(t, cleanup)
 	require.Nil(t, dsns)
 
 	dsns, cleanup, err = RunCluster(t.Context(), "latest-v25.1", 0)
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
 	require.Error(t, err)
+	require.Nil(t, cleanup)
 	require.Nil(t, dsns)
 }
 
@@ -81,15 +75,8 @@ func TestRunClusterWrongTag(t *testing.T) {
 	}()
 
 	dsns, cleanup, err := RunCluster(t.Context(), "63bc8ecd", 3)
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
 	require.Error(t, err)
+	require.Nil(t, cleanup)
 	require.Nil(t, dsns)
 }
 
@@ -105,15 +92,8 @@ func TestRunClusterContextCancel(t *testing.T) {
 	defer cancel()
 
 	dsns, cleanup, err := RunCluster(ctx, "63bc8ecd", 3)
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
 	require.Error(t, err)
+	require.Nil(t, cleanup)
 	require.Nil(t, dsns)
 }
 

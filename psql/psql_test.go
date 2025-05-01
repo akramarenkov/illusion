@@ -28,15 +28,15 @@ func TestRun(t *testing.T) {
 	}()
 
 	dsns, cleanup, err := Run(t.Context(), "17", "postgres", "pgx5")
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
-	defer func() {
-		require.NoError(t, cleanup(t.Context()))
-	}()
-
 	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, cleanup(t.Context()))
+	}()
+
+	defer func() {
+		require.NoError(t, cleanup(t.Context()))
+	}()
 
 	for _, dsn := range dsns {
 		migrations, err := migrate.New("file://testdata/migrations", dsn.String())

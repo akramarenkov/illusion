@@ -74,10 +74,10 @@ func Run(ctx context.Context, imageTag string, drivers ...string) ([]url.URL, Cl
 	dsns, err := grp.run(ctx)
 	if err != nil {
 		if fault := grp.cleanup(ctx); fault != nil {
-			return nil, grp.cleanup, errors.Join(err, fault)
+			return nil, nil, errors.Join(err, fault)
 		}
 
-		return nil, emptyCleanup, err
+		return nil, nil, err
 	}
 
 	return dsns, grp.cleanup, nil
@@ -223,8 +223,4 @@ func prepareHostname() (string, error) {
 	}
 
 	return hostname.String(), nil
-}
-
-func emptyCleanup(_ context.Context) error {
-	return nil
 }

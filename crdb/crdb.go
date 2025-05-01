@@ -64,11 +64,11 @@ type cluster struct {
 
 func RunCluster(ctx context.Context, imageTag string, nodesQuantity int) ([]url.URL, Cleanup, error) {
 	if nodesQuantity < 0 {
-		return nil, emptyCleanup, ErrNodesQuantityNegative
+		return nil, nil, ErrNodesQuantityNegative
 	}
 
 	if nodesQuantity == 0 {
-		return nil, emptyCleanup, ErrNodesQuantityZero
+		return nil, nil, ErrNodesQuantityZero
 	}
 
 	clt := &cluster{
@@ -79,10 +79,10 @@ func RunCluster(ctx context.Context, imageTag string, nodesQuantity int) ([]url.
 	dsns, err := clt.run(ctx)
 	if err != nil {
 		if fault := clt.cleanup(ctx); fault != nil {
-			return nil, clt.cleanup, errors.Join(err, fault)
+			return nil, nil, errors.Join(err, fault)
 		}
 
-		return nil, emptyCleanup, err
+		return nil, nil, err
 	}
 
 	return dsns, clt.cleanup, nil
@@ -339,8 +339,4 @@ func prepareJoin(hostnames []string) string {
 	}
 
 	return join
-}
-
-func emptyCleanup(_ context.Context) error {
-	return nil
 }
