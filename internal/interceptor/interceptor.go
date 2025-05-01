@@ -40,7 +40,13 @@ func Prepare() Cleanup {
 	}
 
 	purge := func() error {
-		return os.RemoveAll(tempDir)
+		err := errors.Join(
+			os.RemoveAll(tempDir),
+			os.Setenv("DOCKER_HOST", os.Getenv(env.InterceptorUpstream)),
+			os.Unsetenv(env.InterceptorUpstream),
+		)
+
+		return err
 	}
 
 	socket := url.URL{
