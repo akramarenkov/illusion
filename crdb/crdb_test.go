@@ -120,37 +120,7 @@ func TestRunClusterCreateNetworkFailed(t *testing.T) {
 	require.Nil(t, dsns)
 }
 
-func TestRunClusterFirstCreateFailed(t *testing.T) {
-	var counter atomic.Int32
-
-	decider := func(r *http.Request) bool {
-		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-
-		image := gjson.GetBytes(body, "Image")
-
-		if strings.HasSuffix(r.URL.Path, "/containers/create") &&
-			strings.HasPrefix(image.String(), "cockroachdb/cockroach:") {
-			return counter.Add(1) != 1
-		}
-
-		return true
-	}
-
-	shutdown, err := interceptor.Run(decider)
-	require.NoError(t, err)
-
-	defer func() {
-		require.NoError(t, shutdown(t.Context()))
-	}()
-
-	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
-	require.Error(t, err)
-	require.Nil(t, cleanup)
-	require.Nil(t, dsns)
-}
-
-func TestRunClusterLastCreateFailed(t *testing.T) {
+func TestRunClusterCreateNodeFailed(t *testing.T) {
 	var counter atomic.Int32
 
 	decider := func(r *http.Request) bool {

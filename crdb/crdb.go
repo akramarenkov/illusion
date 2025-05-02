@@ -78,11 +78,7 @@ func RunCluster(ctx context.Context, imageTag string, nodesQuantity int) ([]url.
 
 	dsns, err := clt.run(ctx)
 	if err != nil {
-		if fault := clt.cleanup(ctx); fault != nil {
-			return nil, nil, errors.Join(err, fault)
-		}
-
-		return nil, nil, err
+		return nil, nil, errors.Join(err, clt.cleanup(ctx))
 	}
 
 	return dsns, clt.cleanup, nil

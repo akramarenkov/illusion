@@ -73,11 +73,7 @@ func Run(ctx context.Context, imageTag string, drivers ...string) ([]url.URL, Cl
 
 	dsns, err := grp.run(ctx)
 	if err != nil {
-		if fault := grp.cleanup(ctx); fault != nil {
-			return nil, nil, errors.Join(err, fault)
-		}
-
-		return nil, nil, err
+		return nil, nil, errors.Join(err, grp.cleanup(ctx))
 	}
 
 	return dsns, grp.cleanup, nil
