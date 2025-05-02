@@ -2,6 +2,10 @@ package crdb
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -11,6 +15,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/cockroachdb"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 )
 
 func TestMain(m *testing.M) {
@@ -92,6 +97,84 @@ func TestRunClusterContextCancel(t *testing.T) {
 	defer cancel()
 
 	dsns, cleanup, err := RunCluster(ctx, "63bc8ecd", 3)
+	require.Error(t, err)
+	require.Nil(t, cleanup)
+	require.Nil(t, dsns)
+}
+
+func TestRunClusterCreateNetworkFailed(t *testing.T) {
+	decider := func(r *http.Request) bool {
+		return !strings.HasSuffix(r.URL.Path, "/networks/create")
+	}
+
+	shutdown, err := interceptor.Run(decider)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, shutdown(t.Context()))
+	}()
+
+	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
+	require.Error(t, err)
+	require.Nil(t, cleanup)
+	require.Nil(t, dsns)
+}
+
+func TestRunClusterFirstCreateFailed(t *testing.T) {
+	var counter atomic.Int32
+
+	decider := func(r *http.Request) bool {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		image := gjson.GetBytes(body, "Image")
+
+		if strings.HasSuffix(r.URL.Path, "/containers/create") &&
+			strings.HasPrefix(image.String(), "cockroachdb/cockroach:") {
+			return counter.Add(1) != 1
+		}
+
+		return true
+	}
+
+	shutdown, err := interceptor.Run(decider)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, shutdown(t.Context()))
+	}()
+
+	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
+	require.Error(t, err)
+	require.Nil(t, cleanup)
+	require.Nil(t, dsns)
+}
+
+func TestRunClusterLastCreateFailed(t *testing.T) {
+	var counter atomic.Int32
+
+	decider := func(r *http.Request) bool {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		image := gjson.GetBytes(body, "Image")
+
+		if strings.HasSuffix(r.URL.Path, "/containers/create") &&
+			strings.HasPrefix(image.String(), "cockroachdb/cockroach:") {
+			return counter.Add(1) != 3
+		}
+
+		return true
+	}
+
+	shutdown, err := interceptor.Run(decider)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, shutdown(t.Context()))
+	}()
+
+	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
 	require.Error(t, err)
 	require.Nil(t, cleanup)
 	require.Nil(t, dsns)
