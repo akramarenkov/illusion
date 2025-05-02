@@ -103,11 +103,11 @@ func TestRunClusterContextCancel(t *testing.T) {
 }
 
 func TestRunClusterCreateNetworkFailed(t *testing.T) {
-	decider := func(r *http.Request) bool {
-		return !strings.HasSuffix(r.URL.Path, "/networks/create")
+	blocker := func(r *http.Request) bool {
+		return strings.HasSuffix(r.URL.Path, "/networks/create")
 	}
 
-	shutdown, err := interceptor.Run(decider)
+	shutdown, err := interceptor.Run(blocker)
 	require.NoError(t, err)
 
 	defer func() {
@@ -123,7 +123,7 @@ func TestRunClusterCreateNetworkFailed(t *testing.T) {
 func TestRunClusterCreateNodeFailed(t *testing.T) {
 	var counter atomic.Int32
 
-	decider := func(r *http.Request) bool {
+	blocker := func(r *http.Request) bool {
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 
@@ -131,13 +131,67 @@ func TestRunClusterCreateNodeFailed(t *testing.T) {
 
 		if strings.HasSuffix(r.URL.Path, "/containers/create") &&
 			strings.HasPrefix(image.String(), "cockroachdb/cockroach:") {
-			return counter.Add(1) != 3
+			return counter.Add(1) == 3
 		}
 
 		return true
 	}
 
-	shutdown, err := interceptor.Run(decider)
+	shutdown, err := interceptor.Run(blocker)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, shutdown(t.Context()))
+	}()
+
+	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
+	require.Error(t, err)
+	require.Nil(t, cleanup)
+	require.Nil(t, dsns)
+}
+
+func TestRunClusterInitFailed(t *testing.T) {
+	blocker := func(r *http.Request) bool {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		cmd := gjson.GetBytes(body, "Cmd").Array()
+
+		if len(cmd) < 2 {
+			return false
+		}
+
+		return cmd[0].String() == "cockroach" && cmd[1].String() == "init"
+	}
+
+	shutdown, err := interceptor.Run(blocker)
+	require.NoError(t, err)
+
+	defer func() {
+		require.NoError(t, shutdown(t.Context()))
+	}()
+
+	dsns, cleanup, err := RunCluster(t.Context(), "latest-v25.1", 3)
+	require.Error(t, err)
+	require.Nil(t, cleanup)
+	require.Nil(t, dsns)
+}
+
+func TestRunClusterStatusFailed(t *testing.T) {
+	blocker := func(r *http.Request) bool {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		cmd := gjson.GetBytes(body, "Cmd").Array()
+
+		if len(cmd) < 2 {
+			return false
+		}
+
+		return cmd[0].String() == "cockroach" && cmd[1].String() == "node"
+	}
+
+	shutdown, err := interceptor.Run(blocker)
 	require.NoError(t, err)
 
 	defer func() {

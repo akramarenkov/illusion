@@ -69,11 +69,11 @@ func Prepare() Cleanup {
 	return cleanup
 }
 
-// Runs interceptor. Requests can be interrupted using deciders.
+// Runs interceptor. Requests can be interrupted using blockers.
 //
 // [Shutdown] function must be called when the test function completes if
 // [Run] did not return an error.
-func Run(deciders ...httpw.Decider) (Shutdown, error) {
+func Run(blockers ...httpw.Blocker) (Shutdown, error) {
 	listen, err := url.Parse(os.Getenv("DOCKER_HOST"))
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func Run(deciders ...httpw.Decider) (Shutdown, error) {
 		Network:  "unix",
 		Address:  listen.Path,
 		Upstream: upstream.String(),
-		Deciders: deciders,
+		Blockers: blockers,
 		Server: &http.Server{
 			ReadTimeout: time.Minute,
 			IdleTimeout: time.Minute,
